@@ -17,22 +17,20 @@ class DuplicateImageDataset(Dataset):
                 if extension == '.jpg':
                     path = os.path.join(dirpath, filename)
                     path = os.path.normcase(path)
-                    self.img_paths.append(path)
+                    image = read_image(path)
+                    if self.transforms:
+                        for transform in self.transforms:
+                            image = transform(image)
+                    self.img_paths.append((image, path))
 
     def __len__(self) -> int:
         return len(self.img_paths) ** 2
     
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, int]:
         num_unique_imgs = len(self.img_paths)
-        img_path_1 = self.img_paths[idx // num_unique_imgs]
-        img_path_2 = self.img_paths[idx % num_unique_imgs]
-        img_1 = read_image(img_path_1)
-        img_2 = read_image(img_path_2)
+        img_1, img_path_1 = self.img_paths[idx // num_unique_imgs]
+        img_2, img_path_2 = self.img_paths[idx % num_unique_imgs]
         label = self._get_label(img_path_1, img_path_2)
-        if self.transforms:
-            for transform in self.transforms:
-                img_1 = transform(img_1)
-                img_2 = transform(img_2)
         return img_1, img_2, label
 
     def _is_duplicate(self, path_1: str, path_2: str) -> bool:
