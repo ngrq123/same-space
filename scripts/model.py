@@ -70,6 +70,58 @@ class SiameseDuplicateImageNetwork(nn.Module):
         # Pass through Siamese network
         output = self.model((img1, img2))
         return output
+    
+
+    def train_loop(self, dataloader: torch.utils.data.DataLoader, loss_fn, optimizer, device):
+        size = len(dataloader.dataset)
+        for batch, (img_1s, img_2s, ys) in enumerate(dataloader):
+            img_1s = img_1s.to(device)
+            img_2s = img_2s.to(device)
+            ys = ys.to(device)
+
+            # Preprocess images
+            img1s = self.preprocess(img_1s)
+            img2s = self.preprocess(img_2s)
+
+            pred = self.model((img1s, img2s))
+            m = nn.Sigmoid()
+            loss = loss_fn(torch.flatten(m(pred)), ys.type(torch.float))
+
+            # Backpropagation
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if batch % 100 == 0:
+                loss, current = loss.item(), (batch + 1) * len(img_1s)
+                print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
+
+    def test_loop(self, dataloader, loss_fn, device):
+        size = len(dataloader.dataset)
+        num_batches = len(dataloader)
+        test_loss, correct = 0, 0
+
+        with torch.no_grad():
+            for img_1s, img_2s, ys in dataloader:
+                img_1s = img_1s.to(device)
+                img_2s = img_2s.to(device)
+                ys = ys.to(device)
+
+                # Preprocess images
+                img1s = self.preprocess(img_1s)
+                img2s = self.preprocess(img_2s)
+                
+                pred = self.model((img1s, img2s))
+                m = nn.Sigmoid()
+                test_loss += loss_fn(torch.flatten(m(pred)), ys.type(torch.float)).item()
+                correct += (pred.argmax(1) == ys).type(torch.float).sum().item()
+
+        test_loss /= num_batches
+        correct /= size
+        print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+
+
 
 
 
