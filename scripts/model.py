@@ -4,6 +4,11 @@ from torchvision.models import mobilenet_v3_large, MobileNet_V3_Large_Weights
 import torch
 
 
+class FlattenAdaptiveAvgPool2d(nn.Module):
+    def forward(self, tensor: torch.Tensor) -> torch.Tensor:
+        return torch.flatten(tensor, 1)
+
+
 class SiameseNetwork(nn.Module):
     def __init__(self, net1: nn.Module, net2: nn.Module) -> None:
         super().__init__()
@@ -34,8 +39,25 @@ class SiameseDuplicateImageNetwork(nn.Module):
         for param in mobilenetv3_2.parameters():
             param.requires_grad_(False)
 
+        # Remove last layer
+        model_submodule_excl_last = list(mobilenetv3_1.children())[:-1]
+        model_submodule_excl_last = nn.Sequential(*model_submodule_excl_last)
+        flatten_layer = FlattenAdaptiveAvgPool2d()  # From MobileNetV3 PyTorch source code, there is a flatten in forward() before classifier
+        flatten_module = nn.Sequential(flatten_layer)
+        model_last_submodule = list(list(mobilenetv3_1.children())[-1].children())[:-1]  # Remove last layer from last submodule (classifier)
+        model_last_submodule = nn.Sequential(*model_last_submodule)
+        mobilenetv3_1 = model_submodule_excl_last.append(flatten_module).append(model_last_submodule)
+
+        model_submodule_excl_last = list(mobilenetv3_2.children())[:-1]
+        model_submodule_excl_last = nn.Sequential(*model_submodule_excl_last)
+        flatten_layer = FlattenAdaptiveAvgPool2d()  # From MobileNetV3 PyTorch source code, there is a flatten in forward() before classifier
+        flatten_module = nn.Sequential(flatten_layer)
+        model_last_submodule = list(list(mobilenetv3_2.children())[-1].children())[:-1]  # Remove last layer from last submodule (classifier)
+        model_last_submodule = nn.Sequential(*model_last_submodule)
+        mobilenetv3_2 = model_submodule_excl_last.append(flatten_module).append(model_last_submodule)
+
         duplicate_image_classifier = nn.Sequential(
-            nn.Linear(1000 * 2, 2048),
+            nn.Linear(1280 * 2, 2048),
             nn.ReLU(),
             nn.Dropout(0.2),
 
