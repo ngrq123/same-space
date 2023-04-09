@@ -1,0 +1,16 @@
+name: siamese_duplicate_image_pytorch_const
+hyperparameters:
+  dropout1: 0.4
+  dropout2: 0.2
+  learning_rate: 1.0e-3
+  global_batch_size: 64
+records_per_epoch: 32524
+searcher:
+  name: single
+  metric: validation_loss
+  smaller_is_better: true
+  max_length:
+    epochs: 10
+min_validation_period:
+  epochs: 1
+entrypoint: model_def:SiameseDuplicateImageDetectionTrial
