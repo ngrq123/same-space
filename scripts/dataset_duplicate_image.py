@@ -1,3 +1,5 @@
+from typing import List, Tuple
+
 import os
 import pathlib
 
@@ -11,7 +13,7 @@ import pandas as pd
 import torch
 
 class DuplicateImageDataset(Dataset):
-    def __init__(self, img_dir: str, transforms: list[torch.nn.Module] = None, balance_classes: bool = True) -> None:
+    def __init__(self, img_dir: str, transforms: List[torch.nn.Module] = None, balance_classes: bool = True) -> None:
         self.img_dir = img_dir
         self.transforms = transforms
         
@@ -59,7 +61,7 @@ class DuplicateImageDataset(Dataset):
         return self.dataset_df.shape[0]
     
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, int]:
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, int]:
         sample = self.dataset_df.loc[idx]
         
         img_path_1 = sample['image1']
