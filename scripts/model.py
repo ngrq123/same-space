@@ -124,12 +124,14 @@ class SiameseDuplicateImageNetwork(nn.Module):
                 output = self.model((img_1s, img_2s))
 
                 pred = torch.flatten(output)
-                labels = labels.type(torch.float)
-                
+                labels = ys.type(torch.float)
+
+                test_loss = loss_fn(pred, labels)
+
                 m = nn.Sigmoid()
                 pred = m(pred)
-                pred = (pred > 0.5).type(torch.int)
-                correct = (pred == labels).sum().item()
+                pred = (pred > 0.5)
+                correct += (pred == labels).sum().item()
 
         test_loss /= num_batches
         correct /= size
