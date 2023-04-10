@@ -1,11 +1,15 @@
 name: siamese_duplicate_image_pytorch_const
 hyperparameters:
-  global_batch_size: 64
+  global_batch_size: 32
   dropout1: 
     type: double
     minval: 0.2
     maxval: 0.8
   dropout2: 
+    type: double
+    minval: 0.2
+    maxval: 0.8
+  dropout3: 
     type: double
     minval: 0.2
     maxval: 0.8
@@ -23,8 +27,8 @@ searcher:
   metric: validation_loss
   smaller_is_better: true
   max_length:
-    epochs: 10
-  max_trials: 16
+    epochs: 30
+  max_trials: 128
 min_validation_period:
   epochs: 1
 entrypoint: model_def:SiameseDuplicateImageDetectionTrial

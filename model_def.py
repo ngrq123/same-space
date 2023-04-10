@@ -75,15 +75,15 @@ class SiameseDuplicateImageDetectionTrial(PyTorchTrial):
         duplicate_image_classifier = nn.Sequential(
             nn.Linear(1280 * 2, 2048),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(self.context.get_hparam('dropout1')),
 
             nn.Linear(2048, 1024),
             nn.ReLU(),
-            nn.Dropout(self.context.get_hparam('dropout1')),
+            nn.Dropout(self.context.get_hparam('dropout2')),
 
             nn.Linear(1024, 512),
             nn.ReLU(),
-            nn.Dropout(self.context.get_hparam('dropout2')),
+            nn.Dropout(self.context.get_hparam('dropout3')),
             nn.Linear(512, 512),
             nn.ReLU(),
             nn.Linear(512, 256),
