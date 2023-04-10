@@ -1,0 +1,30 @@
+name: siamese_duplicate_image_pytorch_const
+hyperparameters:
+  global_batch_size: 64
+  dropout1: 
+    type: double
+    minval: 0.2
+    maxval: 0.8
+  dropout2: 
+    type: double
+    minval: 0.2
+    maxval: 0.8
+  learning_rate: 
+    type: double
+    minval: 1.0e-4
+    maxval: 1.0e-1
+  alpha: 
+    type: double
+    minval: 0.5
+    maxval: 0.99
+records_per_epoch: 32500
+searcher:
+  name: adaptive_asha
+  metric: validation_loss
+  smaller_is_better: true
+  max_length:
+    epochs: 10
+  max_trials: 16
+min_validation_period:
+  epochs: 1
+entrypoint: model_def:SiameseDuplicateImageDetectionTrial
