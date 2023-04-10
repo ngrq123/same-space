@@ -3,8 +3,9 @@ hyperparameters:
   dropout1: 0.4
   dropout2: 0.2
   learning_rate: 1.0e-3
+  alpha: 0.9
   global_batch_size: 64
-records_per_epoch: 32524
+records_per_epoch: 32500
 searcher:
   name: single
   metric: validation_loss

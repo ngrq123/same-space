@@ -103,7 +103,7 @@ class SiameseDuplicateImageDetectionTrial(PyTorchTrial):
             torch.optim.RMSprop(
                 [params for params in self.model.parameters() if params.requires_grad],
                 lr=self.context.get_hparam('learning_rate'),
-                alpha=0.9
+                alpha=self.context.get_hparam('alpha')
             )
         )
 
