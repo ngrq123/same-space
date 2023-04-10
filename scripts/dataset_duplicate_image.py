@@ -31,6 +31,7 @@ class DuplicateImageDataset(Dataset):
         self.image_dict = dict()
         for path in img_paths:
             _image = read_image(path)
+            _image = _image.div(255) # Range has to be between 0 and 1
             if self.transforms:
                 for transform in self.transforms:
                     _image = transform(_image)
@@ -49,7 +50,7 @@ class DuplicateImageDataset(Dataset):
             image_hash_dict = dict()
             for path in img_paths:
                 _image = Image.open(path)
-                _image = _image.resize((224, 224), resample=Resampling.BILINEAR)
+                _image = _image.resize((256, 256), resample=Resampling.BILINEAR)
                 image_hash_dict[path] = imagehash.whash(_image)
                 
             non_duplicate_pairs_df = self._downsample_non_duplicate_pairs(self.dataset_df, image_hash_dict, duplicate_pairs_df.shape[0])

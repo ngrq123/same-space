@@ -3,7 +3,7 @@ from typing import Any, Dict, Union, Sequence, Tuple, cast
 from determined.pytorch import DataLoader, PyTorchTrial, PyTorchTrialContext
 from torch import nn
 from torchvision.models import mobilenet_v3_large
-from torchvision.transforms import Resize
+from torchvision.transforms import Resize, Normalize
 import torch
 
 from scripts.dataset_duplicate_image import DuplicateImageDataset
@@ -38,8 +38,12 @@ class SiameseDuplicateImageDetectionTrial(PyTorchTrial):
         download_dir = './data'
         download_data(download_dir)
 
-        self.train_dataset = DuplicateImageDataset('./data/Airbnb Data/Training Data', transforms=[Resize((224, 224), antialias=True)])
-        self.validate_dataset = DuplicateImageDataset('./data/Airbnb Data/Test Data', transforms=[Resize((224, 224), antialias=True)])
+        self.train_dataset = DuplicateImageDataset('./data/Airbnb Data/Training Data', 
+                                                   transforms=[Resize((256, 256), antialias=True),
+                                                               Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+        self.validate_dataset = DuplicateImageDataset('./data/Airbnb Data/Test Data', 
+                                                   transforms=[Resize((256, 256), antialias=True),
+                                                               Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
         # Instantiate MobileNetV3, and load pre-trained weights
         mobilenetv3_1 = mobilenet_v3_large(pretrained=True)
