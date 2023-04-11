@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 from torchvision.io import read_image
 from torchvision.transforms import RandomHorizontalFlip
 import imagehash
+import numpy as np
 import pandas as pd
 import torch
 
@@ -55,7 +56,7 @@ class DuplicateImageDataset(Dataset):
                 
             non_duplicate_pairs_df = self._downsample_non_duplicate_pairs(self.dataset_df, image_hash_dict, duplicate_pairs_df.shape[0])
 
-            self.dataset_df = pd.concat([duplicate_pairs_df, non_duplicate_pairs_df], ignore_index=True).drop(['similarity'], axis=1)
+            self.dataset_df = pd.concat([duplicate_pairs_df, non_duplicate_pairs_df], ignore_index=True)
 
 
     def __len__(self) -> int:
@@ -134,15 +135,13 @@ class DuplicateImageDataset(Dataset):
             lambda row: compute_similarity(row['image1'], row['image2']), 
             axis=1)
         
-        # Determine threshold based on number of duplicate samples
-        threshold = non_duplicate_pairs_df['similarity'] \
-            .value_counts() \
-            .sort_index() \
-            .cumsum() \
-            .loc[lambda _cumsum: _cumsum >= num_duplicate_samples] \
-            .index[0]
-        
-        downsampled_df = non_duplicate_pairs_df.loc[non_duplicate_pairs_df['similarity'] <= threshold]
+        # Compute weights to be used for sampling
+        # The lower the similarity (more similar), the higher the weight
+        non_duplicate_pairs_df['sampling_weight'] = 1 / np.exp(non_duplicate_pairs_df['similarity'])
 
-        return downsampled_df
+        downsampled_df = non_duplicate_pairs_df.sample(num_duplicate_samples,
+                                                       weights=non_duplicate_pairs_df['sampling_weight'],
+                                                       random_state=0)  # Remove randomness in samples
+
+        return downsampled_df.drop(['similarity', 'sampling_weight'], axis=1)
 
