@@ -3,7 +3,7 @@ from typing import Any, Dict, Union, Sequence, Tuple, cast
 from determined.pytorch import DataLoader, PyTorchTrial, PyTorchTrialContext
 from torch import nn
 from torchvision.models import mobilenet_v3_large
-from torchvision.transforms import Resize, Normalize
+from torchvision.transforms import Normalize, RandomHorizontalFlip, RandomRotation, Resize
 import torch
 
 from scripts.dataset_duplicate_image import DuplicateImageDataset
@@ -38,39 +38,60 @@ class SiameseDuplicateImageDetectionTrial(PyTorchTrial):
         download_dir = './data'
         download_data(download_dir)
 
-        self.train_dataset = DuplicateImageDataset('./data/Airbnb Data/Training Data', 
-                                                   transforms=[Resize((256, 256), antialias=True),
-                                                               Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-        self.validate_dataset = DuplicateImageDataset('./data/Airbnb Data/Test Data', 
-                                                   transforms=[Resize((256, 256), antialias=True),
-                                                               Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+        self.train_dataset = DuplicateImageDataset('./data/Airbnb Data/Training Data',
+            transforms=[
+                Resize((256, 256), antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ],
+            upsample_transforms_dict={
+                'hflip': RandomHorizontalFlip(p=1),
+                'anticlockwise_rot': RandomRotation((5, 5))
+            })
+        self.validate_dataset = DuplicateImageDataset('./data/Airbnb Data/Test Data',
+            transforms=[
+                Resize((256, 256), antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ],
+            upsample_transforms_dict={
+                'hflip': RandomHorizontalFlip(p=1),
+                'anticlockwise_rot': RandomRotation((5, 5))
+            })
 
         # Instantiate MobileNetV3, and load pre-trained weights
         mobilenetv3_1 = mobilenet_v3_large(pretrained=True)
         mobilenetv3_2 = mobilenet_v3_large(pretrained=True)
-        
-        # Freeze MobileNetV3 models
-        for param in mobilenetv3_1.parameters():
-            param.requires_grad_(False)
-        for param in mobilenetv3_2.parameters():
-            param.requires_grad_(False)
 
-        # Remove last layer
+        ### Build MobileNetV3 without last layer
         model_submodule_excl_last = list(mobilenetv3_1.children())[:-1]
         model_submodule_excl_last = nn.Sequential(*model_submodule_excl_last)
         flatten_layer = FlattenAdaptiveAvgPool2d()  # From MobileNetV3 PyTorch source code, there is a flatten in forward() before classifier
-        flatten_module = nn.Sequential(flatten_layer)
+        flatten_submodule = nn.Sequential(flatten_layer)
         model_last_submodule = list(list(mobilenetv3_1.children())[-1].children())[:-1]  # Remove last layer from last submodule (classifier)
         model_last_submodule = nn.Sequential(*model_last_submodule)
-        mobilenetv3_1 = nn.Sequential(*([model_submodule_excl_last] + [flatten_module] + [model_last_submodule]))
 
+        # Freeze layers except last submodule (classifier)
+        for param in model_submodule_excl_last.parameters():
+            param.requires_grad_(False)
+        for param in flatten_submodule.parameters():
+            param.requires_grad_(False)
+        
+        mobilenetv3_1 = nn.Sequential(*([model_submodule_excl_last] + [flatten_submodule] + [model_last_submodule]))
+
+        ### Build MobileNetV3 without last layer
         model_submodule_excl_last = list(mobilenetv3_2.children())[:-1]
         model_submodule_excl_last = nn.Sequential(*model_submodule_excl_last)
         flatten_layer = FlattenAdaptiveAvgPool2d()  # From MobileNetV3 PyTorch source code, there is a flatten in forward() before classifier
-        flatten_module = nn.Sequential(flatten_layer)
+        flatten_submodule = nn.Sequential(flatten_layer)
         model_last_submodule = list(list(mobilenetv3_2.children())[-1].children())[:-1]  # Remove last layer from last submodule (classifier)
         model_last_submodule = nn.Sequential(*model_last_submodule)
-        mobilenetv3_2 = nn.Sequential(*([model_submodule_excl_last] + [flatten_module] + [model_last_submodule]))
+
+        # Freeze layers except last submodule (classifier)
+        for param in model_submodule_excl_last.parameters():
+            param.requires_grad_(False)
+        for param in flatten_submodule.parameters():
+            param.requires_grad_(False)
+        
+        mobilenetv3_2 = nn.Sequential(*([model_submodule_excl_last] + [flatten_submodule] + [model_last_submodule]))
 
         duplicate_image_classifier = nn.Sequential(
             nn.Linear(1280 * 2, 2048),
@@ -84,11 +105,7 @@ class SiameseDuplicateImageDetectionTrial(PyTorchTrial):
             nn.Linear(1024, 512),
             nn.ReLU(),
             nn.Dropout(self.context.get_hparam('dropout3')),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 64),
+            nn.Linear(512, 64),
             nn.ReLU(),
             
             nn.Linear(64, 1)
