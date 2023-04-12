@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import os
 import pathlib
@@ -7,16 +7,15 @@ from PIL import Image
 from PIL.Image import Resampling
 from torch.utils.data import Dataset
 from torchvision.io import read_image
-from torchvision.transforms import RandomHorizontalFlip
 import imagehash
 import numpy as np
 import pandas as pd
 import torch
 
 class DuplicateImageDataset(Dataset):
-    def __init__(self, img_dir: str, transforms: List[torch.nn.Module] = None, balance_classes: bool = True) -> None:
+    def __init__(self, img_dir: str, transforms: List = list(), balance_classes: bool = True, upsample_transforms_dict: Dict[str, torch.nn.Module] = dict()) -> None:
         self.img_dir = img_dir
-        self.transforms = transforms
+        self.upsample_transforms_dict = upsample_transforms_dict
         
         # Get image directories
         img_paths = []
@@ -28,24 +27,15 @@ class DuplicateImageDataset(Dataset):
                     path = os.path.normcase(path)
                     img_paths.append(path)
 
-        # Load and transform images
-        self.image_dict = dict()
-        for path in img_paths:
-            _image = read_image(path)
-            _image = _image.div(255) # Range has to be between 0 and 1
-            if self.transforms:
-                for transform in self.transforms:
-                    _image = transform(_image)
-            self.image_dict[path] = _image
-
         # Create full dataset
         self.dataset_df = self._create_full_dataset(img_paths)
 
         # Balance classes
         if balance_classes:
-            self.dataset_df['img1_hflip'] = False
-            self.dataset_df['img2_hflip'] = False
-            duplicate_pairs_df = self._upsample_duplicate_pairs(self.dataset_df)
+            for transform_key in self.upsample_transforms_dict:
+                self.dataset_df['img1_' + transform_key] = False
+                self.dataset_df['img2_' + transform_key] = False
+            duplicate_pairs_df = self._upsample_duplicate_pairs()
 
             # Calculate image hashes
             image_hash_dict = dict()
@@ -54,9 +44,19 @@ class DuplicateImageDataset(Dataset):
                 _image = _image.resize((256, 256), resample=Resampling.BILINEAR)
                 image_hash_dict[path] = imagehash.whash(_image)
                 
-            non_duplicate_pairs_df = self._downsample_non_duplicate_pairs(self.dataset_df, image_hash_dict, duplicate_pairs_df.shape[0])
+            non_duplicate_pairs_df = self._downsample_non_duplicate_pairs(image_hash_dict, duplicate_pairs_df.shape[0])
+            del(image_hash_dict)  # Save memory
 
             self.dataset_df = pd.concat([duplicate_pairs_df, non_duplicate_pairs_df], ignore_index=True)
+
+        # Load and transform images
+        self.image_dict = dict()
+        for path in img_paths:
+            _image = read_image(path).type(torch.float)
+            for transform_func in transforms:
+                _image = transform_func(_image)
+            _image = _image.div(255) # Range has to be between 0 and 1
+            self.image_dict[path] = _image
 
 
     def __len__(self) -> int:
@@ -72,11 +72,11 @@ class DuplicateImageDataset(Dataset):
         img_1 = self.image_dict[img_path_1]
         img_2 = self.image_dict[img_path_2]
         
-        if ('img1_hflip' in sample.keys()) and sample['img1_hflip']:
-            img_1 = RandomHorizontalFlip(p=1)(img_1)
-
-        if ('img2_hflip' in sample.keys()) and sample['img2_hflip']:
-            img_2 = RandomHorizontalFlip(p=1)(img_2)
+        for transform_key in self.upsample_transforms_dict.keys():
+            if sample['img1_' + transform_key]:
+                img_1 = self.upsample_transforms_dict[transform_key](img_1)
+            if sample['img2_' + transform_key]:
+                img_2 = self.upsample_transforms_dict[transform_key](img_2)
         
         label = sample['label']
         return img_1, img_2, label
@@ -110,29 +110,40 @@ class DuplicateImageDataset(Dataset):
         })
 
 
-    def _upsample_duplicate_pairs(self, dataset_df):
-        duplicate_pairs_df = dataset_df.loc[dataset_df['label'] == 1].copy()
-        upsampled_df = pd.DataFrame()
+    def _upsample_duplicate_pairs(self):
+        duplicate_pairs_df = self.dataset_df.loc[self.dataset_df['label'] == 1].copy()
+
+        if len(self.upsample_transforms_dict) == 0:
+            return duplicate_pairs_df
         
-        for img1_hflip in [True, False]:
-            for img2_hflip in [True, False]:
-                temp_df = duplicate_pairs_df.copy()
-                temp_df['img1_hflip'] = img1_hflip
-                temp_df['img2_hflip'] = img2_hflip
-                upsampled_df = pd.concat([upsampled_df, temp_df], ignore_index=True)
+        upsampled_df = duplicate_pairs_df.copy()
+        
+        # Permutate through all upsample transforms
+        for transform_key in self.upsample_transforms_dict.keys():
+            for transform_img1 in [True, False]:
+                for transform_img2 in [True, False]:
+                    if transform_img1 or transform_img2:
+                        temp_df = duplicate_pairs_df.copy()
+                        temp_df['img1_' + transform_key] = transform_img1
+                        temp_df['img2_' + transform_key] = transform_img2
+                        upsampled_df = pd.concat([upsampled_df, temp_df], ignore_index=True)
+            duplicate_pairs_df = upsampled_df.copy()
         
         return upsampled_df
     
-    def _downsample_non_duplicate_pairs(self, dataset_df, image_hash_dict, num_duplicate_samples):
+    def _downsample_non_duplicate_pairs(self, image_hash_dict, num_duplicate_samples):
         
         def compute_similarity(img1_path, img2_path):
             return image_hash_dict[img1_path] - image_hash_dict[img2_path]
         
-        non_duplicate_pairs_df = dataset_df.loc[dataset_df['label'] == 0].copy()
+        non_duplicate_pairs_df = self.dataset_df.loc[self.dataset_df['label'] == 0].copy()
+
+        if num_duplicate_samples >= non_duplicate_pairs_df.shape[0]:
+            return non_duplicate_pairs_df
 
         # Compute similarity based on image hashes - hamming distance
         non_duplicate_pairs_df['similarity'] = non_duplicate_pairs_df.apply(
-            lambda row: compute_similarity(row['image1'], row['image2']), 
+            lambda row: compute_similarity(row['image1'], row['image2']),
             axis=1)
         
         # Compute weights to be used for sampling
