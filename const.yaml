@@ -6,13 +6,13 @@ hyperparameters:
   learning_rate: 1.0e-3
   alpha: 0.9
   global_batch_size: 32
-records_per_epoch: 32500
+records_per_epoch: 120480
 searcher:
   name: single
   metric: validation_loss
   smaller_is_better: true
   max_length:
-    epochs: 10
+    epochs: 3
 min_validation_period:
   epochs: 1
 entrypoint: model_def:SiameseDuplicateImageDetectionTrial
