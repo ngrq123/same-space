@@ -16,21 +16,21 @@ SameSpace can be embedded into systems to detect duplicate images of accommodati
 
 ## Dataset
 
-The Airbnb Duplicate Image Dataset by Sunkaraneni et al., hosted on Kaggle, is used for model training and validation. (Sunkaraneni et al., 2019) The authors collected images that show the same space/room, and tagged them in the `<city>_<room_id>_<match_number>.jpg` format. This meant that images with the same `city` and `room_id` can be inferred as duplicate images. 
+The Airbnb Duplicate Image Dataset by Sunkaraneni et al., hosted on Kaggle, is used for model training and validation. (Sunkaraneni et al., 2019) The authors collected images that show the same space/room, organised in folders for each space type (e.g. `living-room`, `kitchen`) and tagged them in the `<city>_<room_id>_<match_number>.jpg` format. This meant that images with the same folder, `city` and `room_id` can be inferred as duplicate images. 
 
-The images are organised in separate `Training Data` and `Test Data` folders. In each folder, there are subfolders for each space type (e.g. living room, kitchen) but those are not used.
+The images are also organised in separate `Training Data` and `Test Data` folders.
 
 ### Feature Engineering
 
 The target variable (label) is derived from the image filename, where the filename is split and the `city` and `room_id` are retrieved and matched. Duplicate images have the same `city` and `room_id`.
 
-The training and validation dataset is created by first retrieving all image paths, then pairing them up and deriving the target. This amounts to 3,765 duplicate (positive) and 394,396 non-duplicate (negative) samples in the training dataset, with an extreme class imbalance.
+The training and validation dataset is created by first retrieving all image paths, then pairing them up and deriving the target. This amounts to 1,559 duplicate (positive) and 396,602 non-duplicate (negative) samples in the training dataset, with an extreme class imbalance.
 
 The class imbalance presents an issue on model training - the model does not generalise well and results skew towards the negative class. The negative class can be simply downsampled closer to the positive class, but this will lead to a small training dataset. Upsampling the positive class and downsampling the negative class was done instead, and will be detailed in the following paragraphs.
 
-Upsampling is done on the positive class through image transformations - horizontal flipping and rotation by 5 degrees. These transformations will then applied in all permutations (e.g. image 1 rotated and image 2 horizontally flipped then rotated). The augmented images will then be presented as new images to the model, increasing the positive samples by a factor of 16 to 60,240. It is worth noting that to improve memory efficiency, these transformations will not be immediately applied.
+Upsampling is done on the positive class through image transformations - horizontal flipping, clockwise rotation by 5 degrees and anti-clockwise rotation by 5 degrees. These transformations will then applied in all permutations (e.g. image 1 rotated anti-clockwise and image 2 horizontally flipped then rotated clockwise). The augmented images will then be presented as new images to the model, increasing the positive samples by a factor of 64 to 99,776. It is worth noting that to improve memory efficiency, these transformations will not be immediately applied.
 
-Downsampling on the negative class is performed through weighted sampling. The weights are engineered to be inversely exponential to the similarity score of each image pair. First, the weighted hash of each image (downsized to 256x256) is calculated (using ImageHash). Next, the similarity score (hamming distance) between each non-duplicate pair is calculated. (Levengood, 2020) Lastly, the weights used for sampling is calculated by taking the inverse exponential function of the similarity score: $\frac{1}{e^{x}}$ where $x$ is the similarity score. These weights are then used to sample without replacement with a seed of 0 for consistency across runs. The same number of non-duplicate pairs (60,240) is being sampled.
+Downsampling on the negative class is performed through weighted sampling. The weights are engineered to be inversely exponential to the similarity score of each image pair. First, the weighted hash of each image (downsized to 256x256) is calculated (using ImageHash). Next, the similarity score (hamming distance) between each non-duplicate pair is calculated. (Levengood, 2020) Lastly, the weights used for sampling is calculated by taking the inverse exponential function of the similarity score: $\frac{1}{e^{x}}$ where $x$ is the similarity score. These weights are then used to sample without replacement with a seed of 0 for consistency across runs. The same number of non-duplicate pairs (99,776) is being sampled.
 
 With the dataset in place, all images are loaded into memory, with the resize and normalisation transformations applied in accordance to the input specifications for pre-trained models on PyTorch. (PyTorch, 2022)
 
@@ -38,11 +38,31 @@ The aforementioned steps are applied separately to both training and validation 
 
 ### Data Sample
 
-[comment]: <> (TODO: Data sample diagram)
+The following is a sample of the underlying `DataFrame` that `DuplicateImageDataset` creates, and some samples of the image inputs before transformations.
+
+| image1                                                              | image2                                                               |   class |   img1_hflip |   img2_hflip |   img1_anticlockwise_rot |   img2_anticlockwise_rot |   img1_clockwise_rot |   img2_clockwise_rot |
+|:--------------------------------------------------------------------|:---------------------------------------------------------------------|--------:|-------------:|-------------:|-------------------------:|-------------------------:|---------------------:|---------------------:|
+| ..\data\airbnb data\training data\dining-room\seattle_5680462_1.jpg | ..\data\airbnb data\training data\living-room\seattle_3584790_3.jpg  |       0 |            0 |            0 |                        0 |                        0 |                    0 |                    0 |
+| ..\data\airbnb data\training data\living-room\boston_16288361_1.jpg | ..\data\airbnb data\training data\living-room\seattle_1686930_2.jpg  |       0 |            0 |            0 |                        0 |                        0 |                    0 |                    0 |
+| ..\data\airbnb data\training data\kitchen\boston_1369349_3.jpg      | ..\data\airbnb data\training data\living-room\boston_121799941_2.jpg |       0 |            0 |            0 |                        0 |                        0 |                    0 |                    0 |
+| ..\data\airbnb data\training data\dining-room\seattle_5680462_2.jpg | ..\data\airbnb data\training data\dining-room\seattle_5680462_1.jpg  |       1 |            1 |            0 |                        1 |                        0 |                    1 |                    0 |
+| ..\data\airbnb data\training data\dining-room\seattle_1110749_2.jpg | ..\data\airbnb data\training data\kitchen\seattle_3269390_2.jpg      |       0 |            0 |            0 |                        0 |                        0 |                    0 |                    0 |
+| ..\data\airbnb data\training data\bedroom\seattle_7772661_3.jpg     | ..\data\airbnb data\training data\living-room\seattle_9368342_1.jpg  |       0 |            0 |            0 |                        0 |                        0 |                    0 |                    0 |
+| ..\data\airbnb data\training data\bedroom\seattle_6361863_4.jpg     | ..\data\airbnb data\training data\bedroom\seattle_6361863_4.jpg      |       1 |            0 |            1 |                        1 |                        1 |                    1 |                    0 |
+| ..\data\airbnb data\training data\bathroom\boston_16559025_1.jpg    | ..\data\airbnb data\training data\kitchen\boston_120494_2.jpg        |       0 |            0 |            0 |                        0 |                        0 |                    0 |                    0 |
+| ..\data\airbnb data\training data\bedroom\seattle_4218733_1.jpg     | ..\data\airbnb data\training data\bedroom\seattle_4218733_1.jpg      |       1 |            0 |            1 |                        0 |                        1 |                    1 |                    1 |
+| ..\data\airbnb data\training data\bathroom\boston_20309505_1.jpg    | ..\data\airbnb data\training data\bathroom\boston_20309505_2.jpg     |       1 |            0 |            1 |                        0 |                        1 |                    0 |                    0 |
+
+<img src="./images/data-sample-1.png" />
+
+<img src="./images/data-sample-2.png" />
+
+<img src="./images/data-sample-3.png" />
+
 
 ## Model Architecture
 
-<img src="./images/model-architecture.png" width="750"/>
+<img src="./images/model-architecture.png" width="750" />
 
 SameSpace adopts a Siamese network architecture consisting of two MobileNetV3 large models, each with their last layer removed. The layers prior to the last convolution layer are frozen. The outputs of the MobileNetV3 models are concatenated and passed through the duplicate image classifier.
 
@@ -58,9 +78,15 @@ SameSpace is trained with the root mean square propagation (RMSProp) optimizer w
 
 In addition, there are 3 dropout rates `dropout1`, `dropout2` and `dropout3` each representing the number of neurons to drop after each linear and ReLU layers in the duplicate image classifier.
 
-The `global_batch_size` is set to 64, `epochs` set to 30 and `max_trials` set to 128. The searcher algorithm used is `adaptive_asha`.
+The `global_batch_size` is set to 32, `epochs` set to 30 and `max_trials` set to 16. The searcher algorithm used is `adaptive_asha`.
 
-[comment]: <> (TODO: Search space table)
+| hparam   |    min |   max |
+|:---------|-------:|------:|
+| lr       | 0.0001 |  0.1  |
+| alpha    | 0.5    |  0.99 |
+| dropout1 | 0.2    |  0.8  |
+| dropout2 | 0.2    |  0.8  |
+| dropout3 | 0.2    |  0.8  |
 
 ## Running the Training Job
 
