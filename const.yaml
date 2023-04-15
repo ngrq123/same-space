@@ -1,12 +1,12 @@
 name: siamese_duplicate_image_pytorch_const
 hyperparameters:
-  dropout1: 0.2
-  dropout2: 0.2
+  dropout1: 0.3
+  dropout2: 0.5
   dropout3: 0.4
   learning_rate: 1.0e-3
-  alpha: 0.9
+  alpha: 0.7
   global_batch_size: 32
-records_per_epoch: 120480
+records_per_epoch: 199552
 searcher:
   name: single
   metric: validation_loss

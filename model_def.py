@@ -45,7 +45,8 @@ class SiameseDuplicateImageDetectionTrial(PyTorchTrial):
             ],
             upsample_transforms_dict={
                 'hflip': RandomHorizontalFlip(p=1),
-                'anticlockwise_rot': RandomRotation((5, 5))
+                'anticlockwise_rot': RandomRotation((5, 5)),
+                'clockwise_rot': RandomRotation((-5, -5))
             })
         self.validate_dataset = DuplicateImageDataset('./data/Airbnb Data/Test Data',
             transforms=[
@@ -54,7 +55,8 @@ class SiameseDuplicateImageDetectionTrial(PyTorchTrial):
             ],
             upsample_transforms_dict={
                 'hflip': RandomHorizontalFlip(p=1),
-                'anticlockwise_rot': RandomRotation((5, 5))
+                'anticlockwise_rot': RandomRotation((5, 5)),
+                'clockwise_rot': RandomRotation((-5, -5))
             })
 
         # Instantiate MobileNetV3, and load pre-trained weights
