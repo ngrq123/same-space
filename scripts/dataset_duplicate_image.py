@@ -83,10 +83,17 @@ class DuplicateImageDataset(Dataset):
     
 
     def _is_duplicate(self, path_1: str, path_2: str) -> bool:
+        # Check if space/room type matches
+        file1_folder = os.path.split(os.path.dirname(path_1))[-1]
+        file2_folder = os.path.split(os.path.dirname(path_2))[-1]
+        
+        # Check if city and room id matches
         filename_1_parts = os.path.basename(path_1).split('_')
         filename_2_parts = os.path.basename(path_2).split('_')
+        
         # {city}_{roomid}_{match number}.jpg
-        return filename_1_parts[0] == filename_2_parts[0] and \
+        return file1_folder == file2_folder and \
+            filename_1_parts[0] == filename_2_parts[0] and \
             filename_1_parts[1] == filename_2_parts[1]
 
 
