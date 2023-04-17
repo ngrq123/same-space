@@ -140,7 +140,7 @@ The evaluation results can be reproduced by loading the model checkpoint files, 
 
 The final model weights can be accessed from https://drive.google.com/file/d/1FhAUlhNjSD_IT85LmyGKPQxiA2Ut2mWD/view?usp=sharing (download and copy the `checkpoints` folder to the root folder of the repository)
 
-The code used to download the model checkpoint files and for calculating the evaluation metrics can be found in `model_download.py` and `model_inference.py` respectively. Before running `model_inference.py`, ensure that the dataset is downloaded into the `data` folder.
+The code used to download the model checkpoint files and for calculating the evaluation metrics can be found in `model_download.py` and `model_inference.py` respectively. Before running `model_inference.py`, ensure that the dataset is downloaded into the `data` folder and the `checkpoints` folder is copied to the root folder of the repository.
 
 ## References
 
