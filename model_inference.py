@@ -12,7 +12,7 @@ model = trial.model
 print('Model loaded')
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using {device} device")
+print(f"Using {device} device for inference")
 
 validation_dataset = DuplicateImageDataset('./data/Airbnb Data/Test Data',
                                             transforms=[
@@ -37,8 +37,9 @@ with torch.no_grad():
         img_2s.to(device)
         ys.to(device)
 
-        print(batch_count)
+        print('Evaluating batch', batch_count, 'of', num_batches)
         batch_count += 1
+
         # Pass through Siamese network
         output = model((img_1s, img_2s))
 
