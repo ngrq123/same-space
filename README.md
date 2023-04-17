@@ -136,11 +136,11 @@ These are the hyperparameters with the that produced the `validation_loss` of 0.
 
 ## Reproducing Evaluation Results
 
-The evaluation results can be reproduced by loading the model checkpoint files, running the validation dataset through the model, and calculating the binary cross-entropy loss. The evaluation metrics will likely vary from the aforementioned evaluation results as the dataset is shuffled.
+The evaluation results can be reproduced by loading the model checkpoint files, running the validation dataset through the model, and calculating the binary cross-entropy loss in `model_inference.py`. The evaluation metrics will likely vary from the aforementioned evaluation results as the dataset is shuffled.
 
 The final model weights can be accessed from https://drive.google.com/file/d/1FhAUlhNjSD_IT85LmyGKPQxiA2Ut2mWD/view?usp=sharing (download and copy the `checkpoints` folder to the root folder of the repository)
 
-The code used to download the model checkpoint files and for calculating the evaluation metrics can be found in `model_download.py` and `model_inference.py` respectively. Before running `model_inference.py`, ensure that the dataset is downloaded into the `data` folder and the `checkpoints` folder is copied to the root folder of the repository.
+The code used to download the model checkpoint files and for calculating the evaluation metrics can be found in `model_download.py` and `model_inference.py` respectively. `model_download.py` is not required to be run as the checkpoint file can be downloaded in the link above. Before running `model_inference.py`, ensure that the dataset is downloaded into the `data` folder and the `checkpoints` folder is copied to the root folder of the repository.
 
 ## References
 
