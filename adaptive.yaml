@@ -1,25 +1,25 @@
 name: siamese_duplicate_image_pytorch_adaptive
 hyperparameters:
-  global_batch_size: 32
+  global_batch_size: 64
   dropout1: 
     type: double
     minval: 0.2
-    maxval: 0.8
+    maxval: 0.6
   dropout2: 
     type: double
     minval: 0.2
-    maxval: 0.8
+    maxval: 0.6
   dropout3: 
     type: double
     minval: 0.2
-    maxval: 0.8
+    maxval: 0.6
   learning_rate: 
     type: double
     minval: 1.0e-4
-    maxval: 1.0e-1
+    maxval: 1.0e-2
   alpha: 
     type: double
-    minval: 0.5
+    minval: 0.6
     maxval: 0.99
 records_per_epoch: 199552
 searcher:
