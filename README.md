@@ -30,7 +30,7 @@ The class imbalance presents an issue on model training - the model does not gen
 
 Upsampling is done on the positive class through image transformations - horizontal flipping, clockwise rotation by 5 degrees and anti-clockwise rotation by 5 degrees. These transformations will then applied in all permutations (e.g. image 1 rotated anti-clockwise and image 2 horizontally flipped then rotated clockwise). The augmented images will then be presented as new images to the model, increasing the positive samples by a factor of 64 to 99,776. It is worth noting that to improve memory efficiency, these transformations will not be immediately applied.
 
-Downsampling on the negative class is performed through weighted sampling. The weights are engineered to be inversely exponential to the similarity score of each image pair. First, the weighted hash of each image (downsized to 256x256) is calculated (using ImageHash). Next, the similarity score (hamming distance) between each non-duplicate pair is calculated. (Levengood, 2020) Lastly, the weights used for sampling is calculated by taking the inverse exponential function of the similarity score: $\frac{1}{e^{x}}$ where $x$ is the similarity score. These weights are then used to sample without replacement with a seed of 0 for consistency across runs. The same number of non-duplicate pairs (99,776) is being sampled.
+Downsampling on the negative class is performed through weighted sampling. The aim is to give image pairs that are similar a higher weight, so that they are more likely to be sampled. The metric we used for similarity is the hamming distance between the image hashes (more similar image hashes have a lower hamming distance). The weights are engineered to be inversely exponential to the similarity score of each image pair. First, the weighted hash of each image (downsized to 256x256) is calculated (using ImageHash). Next, the similarity score (hamming distance) between each non-duplicate pair is calculated. (Levengood, 2020) Lastly, the weights used for sampling is calculated by taking the inverse exponential function of the similarity score: $\frac{1}{e^{x}}$ where $x$ is the similarity score. These weights are then used to sample without replacement with a seed of 0 for consistency across runs. The same number of non-duplicate pairs (99,776) is being sampled.
 
 With the dataset in place, all images are loaded into memory, with the resize and normalisation transformations applied in accordance to the input specifications for pre-trained models on PyTorch. (PyTorch, 2022)
 
@@ -78,15 +78,15 @@ SameSpace is trained with the root mean square propagation (RMSProp) optimizer w
 
 In addition, there are 3 dropout rates `dropout1`, `dropout2` and `dropout3` each representing the number of neurons to drop after each linear and ReLU layers in the duplicate image classifier.
 
-The `global_batch_size` is set to 32, `epochs` set to 30 and `max_trials` set to 16. The searcher algorithm used is `adaptive_asha`.
+The `global_batch_size` is set to 64, `epochs` set to 30 and `max_trials` set to 16. The searcher algorithm used is `adaptive_asha`.
 
 | hparam   |    min |   max |
 |:---------|-------:|------:|
-| lr       | 0.0001 |  0.1  |
-| alpha    | 0.5    |  0.99 |
-| dropout1 | 0.2    |  0.8  |
-| dropout2 | 0.2    |  0.8  |
-| dropout3 | 0.2    |  0.8  |
+| lr       | 0.0001 |  0.01 |
+| alpha    | 0.6    |  0.99 |
+| dropout1 | 0.2    |  0.6  |
+| dropout2 | 0.2    |  0.6  |
+| dropout3 | 0.2    |  0.6  |
 
 ## Running the Training Job
 
@@ -104,17 +104,31 @@ The dataset will then be downloaded into the `data` folder in `__init__()` in `m
 
 ## Best Metrics from Determined Web UI
 
-[comment]: <> (TODO: Results screenshot)
+### Experiment
+
+<img src="./images/determined-web-ui-ss.png" width="750" />
+
+### Model with Best Metrics
+
+<img src="./images/determined-web-ui-ss-2.png" width="750" />
 
 ## Evaluation Metrics
 
-The metrics used to evaluate the model are binary cross-entropy loss `BCELoss` and accuracy calculated from the validation dataset. 
+The metrics used to evaluate the model are binary cross-entropy loss (using `binary_cross_entropy_with_logits`) and accuracy calculated from the validation dataset. 
 
-The metric used for the searcher to determine the best model is `validation_loss`.
+The metric used for the searcher to determine the best model is the`validation_loss` (binary cross-entropy loss on the validation dataset).
 
 ## Evaluation Results
 
-[comment]: <> (TODO: Model test results)
+These are the hyperparameters with the best `validation_loss` of 0.363170:
+
+| hparam   |     value |
+|:---------|----------:|
+| lr       |  0.002061 |
+| alpha    |  0.926    |
+| dropout1 |  0.306    |
+| dropout2 |  0.491    |
+| dropout3 |  0.562    |
 
 ## Reproducing Evaluation Results
 
