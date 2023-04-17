@@ -20,6 +20,8 @@ The Airbnb Duplicate Image Dataset by Sunkaraneni et al., hosted on Kaggle, is u
 
 The images are also organised in separate `Training Data` and `Test Data` folders.
 
+The dataset can be accessed on Kaggle: https://www.kaggle.com/datasets/barelydedicated/airbnb-duplicate-image-detection 
+
 ### Feature Engineering
 
 The target variable (label) is derived from the image filename, where the filename is split and the `city` and `room_id` are retrieved and matched. Duplicate images have the same `city` and `room_id`.
@@ -110,6 +112,8 @@ The dataset will then be downloaded into the `data` folder in `__init__()` in `m
 
 ### Model with Best Metrics
 
+<img src="./images/determined-web-ui-ss-3.png" width="750" />
+
 <img src="./images/determined-web-ui-ss-2.png" width="750" />
 
 ## Evaluation Metrics
@@ -120,7 +124,7 @@ The metric used for the searcher to determine the best model is the`validation_l
 
 ## Evaluation Results
 
-These are the hyperparameters with the best `validation_loss` of 0.363170:
+These are the hyperparameters with the that produced the `validation_loss` of 0.363170 and `accuracy` of 0.859827:
 
 | hparam   |     value |
 |:---------|----------:|
@@ -140,6 +144,8 @@ Cherian, 2020. Kaggle API – The Missing Python Documentation: https://technowh
 
 Determined AI, 2023. Prepare Data: https://docs.determined.ai/0.19.10/training/load-model-data.html
 
+Kaggle API – The Missing Python Documentation: https://technowhisp.com/kaggle-api-python-documentation/
+
 Lee, 2021. A Scalable Solution to Detect Duplicate Images: https://medium.com/mlearning-ai/a-scalable-solution-to-detect-duplicate-images-97d431c2726d
 
 Levengood, 2020. Determining how similar two images are with Python + Perceptual Hashing: https://lvngd.com/blog/determining-how-similar-two-images-are-python-perceptual-hashing/
@@ -151,5 +157,3 @@ Podolak, 2021. How to Create a Duplicate Image Detection System: https://towards
 PyTorch, 2022. torchvision.models: https://pytorch.org/vision/0.11/models.html
 
 Sunkaraneni et al., 2019. AirBnB Duplicate Image Dataset: https://www.kaggle.com/datasets/barelydedicated/airbnb-duplicate-image-detection
-
-Kaggle API – The Missing Python Documentation: https://technowhisp.com/kaggle-api-python-documentation/
