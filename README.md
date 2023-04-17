@@ -148,8 +148,6 @@ Cherian, 2020. Kaggle API – The Missing Python Documentation: https://technowh
 
 Determined AI, 2023. Prepare Data: https://docs.determined.ai/0.19.10/training/load-model-data.html
 
-Kaggle API – The Missing Python Documentation: https://technowhisp.com/kaggle-api-python-documentation/
-
 Lee, 2021. A Scalable Solution to Detect Duplicate Images: https://medium.com/mlearning-ai/a-scalable-solution-to-detect-duplicate-images-97d431c2726d
 
 Levengood, 2020. Determining how similar two images are with Python + Perceptual Hashing: https://lvngd.com/blog/determining-how-similar-two-images-are-python-perceptual-hashing/
