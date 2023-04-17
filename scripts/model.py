@@ -126,7 +126,7 @@ class SiameseDuplicateImageNetwork(nn.Module):
                 pred = torch.flatten(output)
                 labels = ys.type(torch.float)
 
-                test_loss = loss_fn(pred, labels)
+                test_loss += loss_fn(pred, labels)
 
                 m = nn.Sigmoid()
                 pred = m(pred)
